@@ -1,8 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
 
-  // Use Vite's injected constant which respects RGS_API_URL env var
-  const localApiHost = (globalThis as any).__RGS_API_URL__ || 'https://vilska-s-rgs.onrender.com';
+  // Use Render RGS as the base URL
+  const localApiHost = 'https://vilska-s-rgs.onrender.com';
   let balance = 1000;
   let gameUrl = '';
   let iframeVisible = false;
