@@ -14,7 +14,8 @@ export default defineConfig({
   server: {
     port: process.env.PORT ? parseInt(process.env.PORT) : 5174,
     host: '0.0.0.0',
-    strictPort: true
+    strictPort: true,
+    allowedHosts: ['vilska-s-rgs.onrender.com', 'localhost', '127.0.0.1']
   },
   plugins: [
     svelte(),
