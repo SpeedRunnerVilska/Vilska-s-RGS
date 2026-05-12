@@ -4,6 +4,9 @@ import { svelte } from '@sveltejs/vite-plugin-svelte'
 // For dev: uses localhost. For production: set RGS_API_URL env var
 const REMOTE_RGS_BASE = process.env.RGS_API_URL || 'https://rgs-demo.hacksawgaming.com';
 
+// In-memory balance storage (resets on server restart)
+let currentBalance = 1000;
+
 // https://vite.dev/config/
 export default defineConfig({
   define: {
@@ -24,7 +27,9 @@ export default defineConfig({
       configureServer(server) {
         server.middlewares.use(async (req, res, next) => {
           const url = req.url ?? '';
-          if (!url.startsWith('/wallet')) {
+          // Normalize the URL to handle double slashes
+          const normalizedUrl = url.replace(/\/+/g, '/');
+          if (!normalizedUrl.startsWith('/wallet')) {
             next();
             return;
           }
@@ -42,13 +47,35 @@ export default defineConfig({
             return;
           }
 
-          if (url === '/wallet/balance') {
-            res.writeHead(200, corsHeaders);
-            res.end(JSON.stringify({ balance: 1000, currency: 'USD' }));
-            return;
+          if (normalizedUrl === '/wallet/balance') {
+            if (req.method === 'GET') {
+              res.writeHead(200, corsHeaders);
+              res.end(JSON.stringify({ balance: currentBalance, currency: 'USD' }));
+              return;
+            } else if (req.method === 'POST') {
+              let body = '';
+              req.on('data', chunk => body += chunk);
+              req.on('end', () => {
+                try {
+                  const data = JSON.parse(body);
+                  if (typeof data.balance === 'number' && data.balance >= 0) {
+                    currentBalance = data.balance;
+                    res.writeHead(200, corsHeaders);
+                    res.end(JSON.stringify({ balance: currentBalance, currency: 'USD' }));
+                  } else {
+                    res.writeHead(400, corsHeaders);
+                    res.end(JSON.stringify({ error: 'Invalid balance value' }));
+                  }
+                } catch (error) {
+                  res.writeHead(400, corsHeaders);
+                  res.end(JSON.stringify({ error: 'Invalid JSON' }));
+                }
+              });
+              return;
+            }
           }
 
-          if (url === '/wallet' || url === '/wallet/') {
+          if (normalizedUrl === '/wallet' || normalizedUrl === '/wallet/') {
             res.writeHead(200, corsHeaders);
             res.end(JSON.stringify({
               success: true,
@@ -58,10 +85,10 @@ export default defineConfig({
             return;
           }
 
-          if (url.startsWith('/wallet/api')) {
-            const remotePath = url.replace(/^\/wallet/, '');
+          if (normalizedUrl.startsWith('/wallet/api')) {
+            const remotePath = normalizedUrl.replace(/^\/wallet/, '');
             const target = new URL(remotePath, REMOTE_RGS_BASE);
-            console.log(`[wallet proxy] ${req.method} ${url} -> ${target}`);
+            console.log(`[wallet proxy] ${req.method} ${normalizedUrl} -> ${target}`);
             const requestHeaders: Record<string, string> = {};
             for (const [key, value] of Object.entries(req.headers)) {
               if (!value || key === 'host') continue;

@@ -4,6 +4,7 @@
   // Use Render RGS as the base URL
   const localApiHost = 'https://vilska-s-rgs.onrender.com';
   let balance = 1000;
+  let balanceInput = '1000'; // For editing
   let gameUrl = '';
   let iframeVisible = false;
   let customGameUrl = 'https://demogamesfree.pragmaticplay.net/gs2c/openGame.do?gameSymbol=vs20olympx&websiteUrl=https%3A%2F%2Fdemogamesfree.pragmaticplay.net&jurisdiction=99&lobby_url=https%3A%2F%2Fwww.pragmaticplay.com%2Fen%2F&lang=en&cur=USD';
@@ -67,8 +68,34 @@ partner=vilska`;
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
       balance = data.balance ?? balance;
+      balanceInput = balance.toString();
     } catch (error) {
-      console.warn('Unable to load local balance:', error);
+      console.warn('Unable to load balance:', error);
+      // Keep current balance on error
+    }
+  }
+
+  async function updateBalance() {
+    const newBalance = parseFloat(balanceInput);
+    if (isNaN(newBalance) || newBalance < 0) {
+      alert('Please enter a valid positive number');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${walletBase}/balance`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ balance: newBalance })
+      });
+
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const data = await response.json();
+      balance = data.balance;
+      console.log('Balance updated:', balance);
+    } catch (error) {
+      console.error('Failed to update balance:', error);
+      alert('Failed to update balance. Check console for details.');
     }
   }
 
@@ -98,12 +125,21 @@ partner=vilska`;
       <button on:click={buildGameUrl} style="margin-top:1rem; padding: 0.75rem 1.25rem; border:none; border-radius:8px; background:#28a745; color:white; cursor:pointer;">Build local game URL</button>
     </div>
     <div style="padding: 1rem; border: 1px solid #ddd; border-radius: 12px; background: #f8f9fb;">
-      <h2>Local API status</h2>
-      <p><strong>Balance:</strong> {balance.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</p>
-      <p><strong>Game URL:</strong></p>
-      <pre style="white-space: pre-wrap; word-break: break-word; background: #fff; padding: 0.75rem; border-radius: 8px; border: 1px solid #ccc;">{gameUrl}</pre>
-      <button on:click={openGame} style="padding: 0.75rem 1.25rem; border:none; border-radius:8px; background:#1e90ff; color:white; cursor:pointer;">Launch game iframe</button>
-      <a href={gameUrl} target="_blank" rel="noreferrer" style="margin-left:1rem; color:#1e90ff;">Open in new tab</a>
+      <h2>Wallet Balance</h2>
+      <p><strong>Current Balance:</strong> {balance.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</p>
+      <div style="display: flex; gap: 0.5rem; align-items: center; margin-top: 1rem;">
+        <label for="balance-input" style="font-weight: bold;">Set Balance:</label>
+        <input
+          id="balance-input"
+          type="number"
+          min="0"
+          step="0.01"
+          bind:value={balanceInput}
+          style="padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px; width: 120px;"
+        />
+        <button on:click={updateBalance} style="padding: 0.5rem 1rem; border:none; border-radius:4px; background:#28a745; color:white; cursor:pointer;">Update</button>
+        <button on:click={loadBalance} style="padding: 0.5rem 1rem; border:none; border-radius:4px; background:#1e90ff; color:white; cursor:pointer;">Refresh</button>
+      </div>
     </div>
 
     <div style="padding: 1rem; border: 1px solid #ddd; border-radius: 12px; background: #fff7e6;">
