@@ -3,7 +3,11 @@ services:
     name: vilska-s-rgs
     env: node
     buildCommand: npm install && npm run build
-    startCommand: npm run preview
+    startCommand: npm run start
     envVars:
       - key: NODE_ENV
         value: production
+      - key: PORT
+        value: 10000
+      - key: RGS_API_URL
+        value: https://vilska-s-rgs.onrender.com

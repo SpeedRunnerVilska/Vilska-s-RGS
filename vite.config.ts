@@ -12,7 +12,8 @@ export default defineConfig({
     ),
   },
   server: {
-    port: 5174,
+    port: process.env.PORT ? parseInt(process.env.PORT) : 5174,
+    host: '0.0.0.0',
     strictPort: true
   },
   plugins: [
