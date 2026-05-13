@@ -65,7 +65,7 @@ function handleWalletPlay(req: http.IncomingMessage, res: http.ServerResponse) {
     if (balance < 0) balance = 0
 
     sendJson(res, 200, {
-      endpoint: '/wallet/play',
+      endpoint: `${baseUrl}/wallet/play`,
       result: win ? 'win' : 'lose',
       amount,
       balance
