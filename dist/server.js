@@ -1,23 +1,37 @@
 import http from 'node:http';
 import { Buffer } from 'node:buffer';
 const port = Number(process.env.PORT ?? 3000);
+const baseUrl = 'https://vilska-s-rgs.onrender.com';
+const authToken = process.env.RGS_AUTH_TOKEN ?? 'rgs-secret-token';
 let balance = 1000;
 function sendJson(res, status, payload) {
     res.writeHead(status, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(payload, null, 2));
 }
+function authenticate(req, res) {
+    const authorization = req.headers.authorization;
+    if (!authorization || authorization !== `Bearer ${authToken}`) {
+        sendJson(res, 401, {
+            error: 'Unauthorized',
+            message: 'Provide Authorization: Bearer <token>',
+            validExample: `Bearer ${authToken}`
+        });
+        return false;
+    }
+    return true;
+}
 function handleWallet(_req, res) {
     sendJson(res, 200, {
-        endpoint: '/wallet',
+        endpoint: `${baseUrl}/wallet`,
         balance,
         status: 'ok'
     });
 }
 function handleWalletApi(_req, res) {
     sendJson(res, 200, {
-        endpoint: '/wallet/api',
+        endpoint: `${baseUrl}/wallet/api`,
         balance,
-        actions: ['GET /wallet', 'POST /wallet/play']
+        actions: [`GET ${baseUrl}/wallet`, `POST ${baseUrl}/wallet/play`]
     });
 }
 function handleWalletPlay(req, res) {
@@ -51,6 +65,9 @@ function handleWalletPlay(req, res) {
     });
 }
 const server = http.createServer((req, res) => {
+    if (!authenticate(req, res)) {
+        return;
+    }
     const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`);
     switch (url.pathname) {
         case '/wallet':
@@ -63,7 +80,8 @@ const server = http.createServer((req, res) => {
             return sendJson(res, 200, {
                 message: 'Remote Gaming Server (RGS) backend is running',
                 balance,
-                endpoints: ['/wallet', '/wallet/api', '/wallet/play']
+                baseUrl,
+                endpoints: [`${baseUrl}/wallet`, `${baseUrl}/wallet/api`, `${baseUrl}/wallet/play`]
             });
         default:
             return sendJson(res, 404, { error: 'Not found', path: url.pathname });
