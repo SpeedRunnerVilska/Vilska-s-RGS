@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.node.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "module": "es2020",
+    "target": "es2023",
+    "moduleResolution": "bundler",
+    "noEmit": false,
+    "declaration": false,
+    "sourceMap": true,
+    "rootDir": "./server",
+    "allowImportingTsExtensions": false
+  },
+  "include": ["server/**/*.ts"]
+}
